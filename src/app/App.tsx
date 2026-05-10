@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Trophy, Plus, Minus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Trophy, Plus, Minus, Search, X } from 'lucide-react';
 
 interface StickerState {
   [key: string]: number;
@@ -14,7 +14,7 @@ const grupos = {
   F: ['Holanda', 'Japão', 'Suécia', 'Tunísia'],
   G: ['Bélgica', 'Egito', 'Irã', 'Nova Zelândia'],
   H: ['Espanha', 'Cabo Verde', 'Arábia Saudita', 'Uruguai'],
-  I: ['França', 'Senegal', 'Bolívia/Iraque', 'Noruega'],
+  I: ['França', 'Senegal', 'Iraque', 'Noruega'],
   J: ['Argentina', 'Argélia', 'Áustria', 'Jordânia'],
   K: ['Portugal', 'RD Congo', 'Uzbequistão', 'Colômbia'],
   L: ['Inglaterra', 'Croácia', 'Gana', 'Panamá']
@@ -25,6 +25,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<'fwc' | 'grupos' | 'coca'>('fwc');
   const [activeGroup, setActiveGroup] = useState<keyof typeof grupos>('A');
   const [showGroupSelector, setShowGroupSelector] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     const saved = localStorage.getItem('album-figurinhas');
@@ -36,6 +37,10 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('album-figurinhas', JSON.stringify(stickers));
   }, [stickers]);
+
+  const removeAccents = (str: string) => {
+    return str.normalize('NFD').replace(/[̀-ͯ]/g, '');
+  };
 
   const incrementSticker = (id: string) => {
     setStickers(prev => ({
@@ -195,22 +200,78 @@ export default function App() {
                 </button>
               </div>
 
+              {/* Search Field */}
+              <div className="mb-4 relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/60" />
+                <input
+                  type="text"
+                  placeholder="Pesquisar seleção..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-10 py-3 bg-[#6B1028] rounded-lg text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 hover:bg-white/20 rounded-full transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+
               {/* Teams in Group */}
               <div className="space-y-4">
-                {grupos[activeGroup].map((selecao) => {
-                  const teamIds = Array.from({ length: 20 }, (_, i) => `${activeGroup}-${selecao}-${i + 1}`);
-                  return (
-                    <StickerSection
-                      key={`${activeGroup}-${selecao}`}
-                      title={selecao}
-                      ids={teamIds}
-                      stickers={stickers}
-                      onIncrement={incrementSticker}
-                      onDecrement={decrementSticker}
-                      getProgress={getProgress}
-                    />
-                  );
-                })}
+                {searchQuery ? (
+                  // Show filtered results from all groups
+                  <>
+                    {Object.entries(grupos).flatMap(([grupo, selecoes]) =>
+                      selecoes
+                        .filter(selecao =>
+                          removeAccents(selecao.toLowerCase()).includes(removeAccents(searchQuery.toLowerCase()))
+                        )
+                        .map(selecao => {
+                          const teamIds = Array.from({ length: 20 }, (_, i) => `${grupo}-${selecao}-${i + 1}`);
+                          return (
+                            <StickerSection
+                              key={`${grupo}-${selecao}`}
+                              title={`${selecao} (Grupo ${grupo})`}
+                              ids={teamIds}
+                              stickers={stickers}
+                              onIncrement={incrementSticker}
+                              onDecrement={decrementSticker}
+                              getProgress={getProgress}
+                            />
+                          );
+                        })
+                    )}
+                    {Object.entries(grupos).flatMap(([, selecoes]) =>
+                      selecoes.filter(selecao =>
+                        removeAccents(selecao.toLowerCase()).includes(removeAccents(searchQuery.toLowerCase()))
+                      )
+                    ).length === 0 && (
+                      <div className="text-center py-8 text-white/60">
+                        Nenhuma seleção encontrada
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  // Show current group
+                  grupos[activeGroup].map((selecao) => {
+                    const teamIds = Array.from({ length: 20 }, (_, i) => `${activeGroup}-${selecao}-${i + 1}`);
+                    return (
+                      <StickerSection
+                        key={`${activeGroup}-${selecao}`}
+                        title={selecao}
+                        ids={teamIds}
+                        stickers={stickers}
+                        onIncrement={incrementSticker}
+                        onDecrement={decrementSticker}
+                        getProgress={getProgress}
+                      />
+                    );
+                  })
+                )}
               </div>
             </>
           )}
