@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Trophy, Plus, Minus, Search, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Trophy, Plus, Minus, Search, X, Share2 } from 'lucide-react';
 
 interface StickerState {
   [key: string]: number;
@@ -40,6 +40,67 @@ export default function App() {
 
   const removeAccents = (str: string) => {
     return str.normalize('NFD').replace(/[̀-ͯ]/g, '');
+  };
+
+  const shareCollection = async () => {
+    const myStickers: string[] = [];
+
+    // FWC
+    fwcIds.forEach(id => {
+      const count = stickers[id] || 0;
+      if (count > 0) {
+        const num = id.replace('fwc-', '');
+        myStickers.push(`FWC-${num}: ${count}x`);
+      }
+    });
+
+    // Grupos
+    Object.entries(grupos).forEach(([grupo, selecoes]) => {
+      selecoes.forEach(selecao => {
+        const teamStickers: string[] = [];
+        for (let i = 1; i <= 20; i++) {
+          const id = `${grupo}-${selecao}-${i}`;
+          const count = stickers[id] || 0;
+          if (count > 0) {
+            teamStickers.push(`${i}: ${count}x`);
+          }
+        }
+        if (teamStickers.length > 0) {
+          myStickers.push(`\n${selecao} (Grupo ${grupo}):\n${teamStickers.join(', ')}`);
+        }
+      });
+    });
+
+    // Coca-Cola
+    cocaIds.forEach(id => {
+      const count = stickers[id] || 0;
+      if (count > 0) {
+        const num = id.replace('coca-', '');
+        myStickers.push(`Coca-Cola ${num}: ${count}x`);
+      }
+    });
+
+    const text = `🏆 Minha Coleção - Copa do Mundo\n\nProgresso: ${globalProgress.filled}/${globalProgress.total} (${globalProgress.percent}%)\nTotal de figurinhas: ${getTotalStickers()}\n\n${myStickers.join('\n')}`;
+
+    try {
+      await navigator.clipboard.writeText(text);
+      alert('Lista copiada para a área de transferência!');
+    } catch (error) {
+      // Fallback se clipboard falhar
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      try {
+        document.execCommand('copy');
+        alert('Lista copiada para a área de transferência!');
+      } catch (err) {
+        alert('Não foi possível copiar. Tente novamente.');
+      }
+      document.body.removeChild(textarea);
+    }
   };
 
   const incrementSticker = (id: string) => {
@@ -85,7 +146,14 @@ export default function App() {
         <div className="bg-[#8B1538] p-4 shadow-lg sticky top-0 z-10">
           <div className="flex items-center gap-2 mb-3">
             <Trophy className="w-6 h-6 text-yellow-400" />
-            <h1 className="text-white">Álbum Copa do Mundo</h1>
+            <h1 className="text-white flex-1">Álbum Copa do Mundo</h1>
+            <button
+              onClick={shareCollection}
+              className="p-2 bg-yellow-400 text-[#8B1538] rounded-lg hover:bg-yellow-300 transition-colors"
+              title="Compartilhar coleção"
+            >
+              <Share2 className="w-5 h-5" />
+            </button>
           </div>
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
