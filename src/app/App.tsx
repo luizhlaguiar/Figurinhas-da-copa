@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Trophy, Plus, Minus, Search, X, Share2, CircleX } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Trophy, Plus, Minus, Search, X, Share2, CircleX, Copy } from 'lucide-react';
 
 interface StickerState {
   [key: string]: number;
@@ -137,6 +137,50 @@ export default function App() {
     copyToClipboard(text, 'Lista de faltantes copiada!');
   };
 
+  const shareRepeated = async () => {
+    const repeatedStickers: string[] = [];
+
+    // FWC
+    fwcIds.forEach(id => {
+      const count = stickers[id] || 0;
+      if (count > 1) {
+        const num = id.replace('fwc-', '');
+        repeatedStickers.push(`FWC-${num}: ${count}x`);
+      }
+    });
+
+    // Grupos
+    Object.entries(grupos).forEach(([grupo, selecoes]) => {
+      selecoes.forEach(selecao => {
+        const teamRepeated: string[] = [];
+        for (let i = 1; i <= 20; i++) {
+          const id = `${grupo}-${selecao}-${i}`;
+          const count = stickers[id] || 0;
+          if (count > 1) {
+            teamRepeated.push(`${i}: ${count}x`);
+          }
+        }
+        if (teamRepeated.length > 0) {
+          repeatedStickers.push(`\n${selecao} (Grupo ${grupo}):\n${teamRepeated.join(', ')}`);
+        }
+      });
+    });
+
+    // Coca-Cola
+    cocaIds.forEach(id => {
+      const count = stickers[id] || 0;
+      if (count > 1) {
+        const num = id.replace('coca-', '');
+        repeatedStickers.push(`Coca-Cola ${num}: ${count}x`);
+      }
+    });
+
+    const totalRepeated = totalIds.filter(id => (stickers[id] || 0) > 1).length;
+    const text = `🔄 Figurinhas Repetidas - Copa do Mundo\n\nTotal de repetidas: ${totalRepeated}\n\n${repeatedStickers.join('\n')}`;
+
+    copyToClipboard(text, 'Lista de repetidas copiada!');
+  };
+
   const copyToClipboard = async (text: string, successMessage: string) => {
     try {
       await navigator.clipboard.writeText(text);
@@ -213,6 +257,16 @@ export default function App() {
                   <Share2 className="w-5 h-5" />
                 </button>
                 <span className="text-xs mt-1">Tenho</span>
+              </div>
+              <div className="flex flex-col items-center">
+                <button
+                  onClick={shareRepeated}
+                  className="p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                  title="Compartilhar repetidas"
+                >
+                  <Copy className="w-5 h-5" />
+                </button>
+                <span className="text-xs mt-1">Repetidas</span>
               </div>
               <div className="flex flex-col items-center">
                 <button
