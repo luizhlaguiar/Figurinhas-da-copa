@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Trophy, Plus, Minus, Search, X, Share2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Trophy, Plus, Minus, Search, X, Share2, CircleX } from 'lucide-react';
 
 interface StickerState {
   [key: string]: number;
@@ -80,11 +80,67 @@ export default function App() {
       }
     });
 
-    const text = `🏆 Minha Coleção - Copa do Mundo\n\nProgresso: ${globalProgress.filled}/${globalProgress.total} (${globalProgress.percent}%)\nTotal de figurinhas: ${getTotalStickers()}\n\n${myStickers.join('\n')}`;
+    const text = `🏆 Minhas Figurinhas - Copa do Mundo\n\nProgresso: ${globalProgress.filled}/${globalProgress.total} (${globalProgress.percent}%)\nTotal de figurinhas: ${getTotalStickers()}\n\n${myStickers.join('\n')}`;
 
+    copyToClipboard(text, 'Lista de figurinhas copiada!');
+  };
+
+  const shareMissing = async () => {
+    const missingStickers: string[] = [];
+
+    // FWC
+    const fwcMissing: string[] = [];
+    fwcIds.forEach(id => {
+      const count = stickers[id] || 0;
+      if (count === 0) {
+        const num = id.replace('fwc-', '');
+        fwcMissing.push(num);
+      }
+    });
+    if (fwcMissing.length > 0) {
+      missingStickers.push(`FWC: ${fwcMissing.join(', ')}`);
+    }
+
+    // Grupos
+    Object.entries(grupos).forEach(([grupo, selecoes]) => {
+      selecoes.forEach(selecao => {
+        const teamMissing: string[] = [];
+        for (let i = 1; i <= 20; i++) {
+          const id = `${grupo}-${selecao}-${i}`;
+          const count = stickers[id] || 0;
+          if (count === 0) {
+            teamMissing.push(i.toString());
+          }
+        }
+        if (teamMissing.length > 0) {
+          missingStickers.push(`${selecao} (Grupo ${grupo}): ${teamMissing.join(', ')}`);
+        }
+      });
+    });
+
+    // Coca-Cola
+    const cocaMissing: string[] = [];
+    cocaIds.forEach(id => {
+      const count = stickers[id] || 0;
+      if (count === 0) {
+        const num = id.replace('coca-', '');
+        cocaMissing.push(num);
+      }
+    });
+    if (cocaMissing.length > 0) {
+      missingStickers.push(`Coca-Cola: ${cocaMissing.join(', ')}`);
+    }
+
+    const totalMissing = totalIds.length - globalProgress.filled;
+    const text = `❌ Figurinhas Faltantes - Copa do Mundo\n\nFaltam: ${totalMissing} figurinhas\nProgresso: ${globalProgress.filled}/${globalProgress.total} (${globalProgress.percent}%)\n\n${missingStickers.join('\n\n')}`;
+
+    copyToClipboard(text, 'Lista de faltantes copiada!');
+  };
+
+  const copyToClipboard = async (text: string, successMessage: string) => {
     try {
       await navigator.clipboard.writeText(text);
-      alert('Lista copiada para a área de transferência!');
+      alert(successMessage);
     } catch (error) {
       // Fallback se clipboard falhar
       const textarea = document.createElement('textarea');
@@ -95,7 +151,7 @@ export default function App() {
       textarea.select();
       try {
         document.execCommand('copy');
-        alert('Lista copiada para a área de transferência!');
+        alert(successMessage);
       } catch (err) {
         alert('Não foi possível copiar. Tente novamente.');
       }
@@ -147,13 +203,28 @@ export default function App() {
           <div className="flex items-center gap-2 mb-3">
             <Trophy className="w-6 h-6 text-yellow-400" />
             <h1 className="text-white flex-1">Álbum Copa do Mundo</h1>
-            <button
-              onClick={shareCollection}
-              className="p-2 bg-yellow-400 text-[#8B1538] rounded-lg hover:bg-yellow-300 transition-colors"
-              title="Compartilhar coleção"
-            >
-              <Share2 className="w-5 h-5" />
-            </button>
+            <div className="flex gap-2">
+              <div className="flex flex-col items-center">
+                <button
+                  onClick={shareCollection}
+                  className="p-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                  title="Compartilhar minhas figurinhas"
+                >
+                  <Share2 className="w-5 h-5" />
+                </button>
+                <span className="text-xs mt-1">Tenho</span>
+              </div>
+              <div className="flex flex-col items-center">
+                <button
+                  onClick={shareMissing}
+                  className="p-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                  title="Compartilhar faltantes"
+                >
+                  <CircleX className="w-5 h-5" />
+                </button>
+                <span className="text-xs mt-1">Faltam</span>
+              </div>
+            </div>
           </div>
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
